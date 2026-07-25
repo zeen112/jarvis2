@@ -1,6 +1,9 @@
 const express = require('express');
+const { spawn } = require('child_process');
+
 const app = express();
-const port = 3000;
+// Menggunakan port dari environment Back4App atau fallback ke 3000
+const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
   res.send(`
@@ -14,7 +17,6 @@ app.get('/', (req, res) => {
             font-weight: 600;
             font-display: swap;
           }
-          /* The rest of your @font-face rules... */
 
           .btn-primary {
             background-color: green;
@@ -22,7 +24,6 @@ app.get('/', (req, res) => {
             border-radius: 0.25rem;
             height: 2.25rem;
           }
-          /* The rest of your CSS rules... */
 
           body {
             background-color: #10203A;
@@ -44,6 +45,30 @@ app.get('/', (req, res) => {
   `);
 });
 
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`App listening at http://0.0.0.0:${port}`);
+
+  // 1. Memulai proses 9Router di latar belakang (Port 20128)
+  console.log('[9Router] Memulai service 9Router...');
+  const routerProc = spawn('npx', ['9router', '--host', '0.0.0.0', '--port', '20128'], {
+    stdio: 'inherit',
+    shell: true
+  });
+
+  routerProc.on('error', (err) => {
+    console.error('[9Router Error]:', err);
+  });
+
+  // 2. Memulai Hermes Bot Telegram (dijeda 5 detik agar 9Router siap)
+  setTimeout(() => {
+    console.log('[Hermes] Memulai Hermes Bot Telegram...');
+    const hermesProc = spawn('hermes', ['telegram', 'start'], {
+      stdio: 'inherit',
+      shell: true
+    });
+
+    hermesProc.on('error', (err) => {
+      console.error('[Hermes Error]:', err);
+    });
+  }, 5000);
 });
