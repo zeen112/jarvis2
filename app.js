@@ -48,12 +48,13 @@ app.get('/', (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`App listening at http://0.0.0.0:${port}`);
 
-  // 1. Memulai proses 9Router di latar belakang (Port 20128)
+    // 1. Memulai 9Router secara lokal dari node_modules
   console.log('[9Router] Memulai service 9Router...');
-  const routerProc = spawn('npx', ['9router', '--host', '0.0.0.0', '--port', '20128'], {
+  const routerProc = spawn('npx', ['--no-install', '9router', '--host', '0.0.0.0', '--port', '20128'], {
     stdio: 'inherit',
     shell: true
   });
+
 
   routerProc.on('error', (err) => {
     console.error('[9Router Error]:', err);
