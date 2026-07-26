@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`App listening at http://0.0.0.0:${port}`);
 
-     // 1. Memulai 9Router dari dependencies yang sudah ter-install
+  // 1. Memulai 9Router dari dependencies yang sudah ter-install
   console.log('[9Router] Memulai service 9Router...');
   const routerProc = spawn('npx', ['--no-install', '9router', '--host', '0.0.0.0', '--port', '20128'], {
     stdio: 'inherit',
@@ -59,10 +59,10 @@ app.listen(port, '0.0.0.0', () => {
     console.error('[9Router Error]:', err);
   });
 
-  // 2. Memulai Hermes Bot Telegram (dijeda 5 detik agar 9Router siap)
+  // 2. Memulai Hermes Bot Telegram (Menggunakan npx --no-install hermes-agent)
   setTimeout(() => {
     console.log('[Hermes] Memulai Hermes Bot Telegram...');
-    const hermesProc = spawn('hermes', ['telegram', 'start'], {
+    const hermesProc = spawn('npx', ['--no-install', 'hermes-agent', 'telegram', 'start'], {
       stdio: 'inherit',
       shell: true
     });
