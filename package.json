@@ -13,6 +13,8 @@
     "express": "^4.17.1",
     "9router": "latest",
     "hermes-agent": "latest",
-    "http-proxy-middleware": "^3.0.0"
+    "http-proxy-middleware": "^3.0.0",
+    "better-sqlite3": "latest",
+    "sqlite3": "latest"
   }
 }
