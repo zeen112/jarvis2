@@ -7,11 +7,17 @@ const port = process.env.PORT || 3000;
 
 let routerLog = 'Memulai 9Router...\n';
 
-// 1. Jalankan Service 9Router mengikat ke 127.0.0.1 (Local Only)
+// 1. Jalankan Service 9Router dengan environment headless & port internal 20128
 console.log('[9Router] Memulai service 9Router...');
-const routerProc = spawn('npx', ['9router', '--host', '127.0.0.1', '--port', '20128'], {
+const routerProc = spawn('npx', ['9router', '--port', '20128'], {
   stdio: 'pipe',
-  shell: true
+  shell: true,
+  env: { 
+    ...process.env, 
+    HOST: '127.0.0.1',
+    PORT: '20128',
+    CI: 'true' // Memberi tahu CLI bahwa ini berjalan di server cloud/non-interaktif
+  }
 });
 
 routerProc.stdout.on('data', (data) => {
@@ -35,7 +41,7 @@ setTimeout(() => {
   });
 }, 10000);
 
-// 3. Setup Reverse Proxy
+// 3. Reverse Proxy ke 9Router
 const routerProxy = createProxyMiddleware({
   target: 'http://127.0.0.1:20128',
   changeOrigin: true,
@@ -45,10 +51,9 @@ const routerProxy = createProxyMiddleware({
       if (!res.headersSent) {
         res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(`
-          <h3>9Router Belum Siap / Mengalami Kendala</h3>
-          <p>Berikut adalah log internal dari 9Router:</p>
+          <h3>9Router Sedang Booting...</h3>
+          <p>Silakan refresh halaman ini dalam 3-5 detik.</p>
           <pre style="background: #111; color: #0f0; padding: 15px; border-radius: 5px;">${routerLog}</pre>
-          <p><i>Silakan refresh jika log di atas menunjukkan proses startup masih berjalan.</i></p>
         `);
       }
     }
