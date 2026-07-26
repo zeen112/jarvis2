@@ -3,14 +3,13 @@ const { spawn } = require('child_process');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
-// Express otomatis memakai PORT dari Back4App (8080)
 const port = process.env.PORT || 3000;
 
 let routerLog = 'Memulai 9Router...\n';
 
-// 1. Jalankan Service 9Router (Port internal 20128)
+// 1. Jalankan Service 9Router mengikat ke 127.0.0.1 (Local Only)
 console.log('[9Router] Memulai service 9Router...');
-const routerProc = spawn('npx', ['9router', '--port', '20128'], {
+const routerProc = spawn('npx', ['9router', '--host', '127.0.0.1', '--port', '20128'], {
   stdio: 'pipe',
   shell: true
 });
