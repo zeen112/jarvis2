@@ -1,64 +1,42 @@
 const express = require('express');
-const { spawn } = require('child_process');
+const { exec } = require('child_process');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-let routerLog = 'Memulai 9Router Service...\n';
+let routerLog = '=== Memulai Sistem ===\n';
 
-// 1. Eksekusi 9Router dengan Environment Server/Headless
-console.log('[9Router] Memulai service 9Router...');
+// 1. Eksekusi murni (exec) layaknya ketik manual di terminal
+console.log('[9Router] Memulai service...');
 
-const env9Router = {
-  ...process.env,
-  PORT: '20128',
-  HOST: '127.0.0.1',
-  BIND_HOST: '127.0.0.1',
-  NO_COLOR: '1',
-  CI: 'true',
-  FORCE_COLOR: '0'
-};
-
-// Kita jalankan 9router langsung tanpa flag aneh yang di-reject parser CLI-nya
-const routerProc = spawn('npx', ['--yes', '9router'], {
-  stdio: 'pipe',
-  shell: true,
-  env: env9Router
+// Menggunakan tanda sama dengan (=) untuk mencegah argumen terpecah di npx
+const routerProc = exec('HOST=127.0.0.1 npx 9router --host=127.0.0.1 --port=20128', {
+  env: { ...process.env, CI: 'true', NO_COLOR: '1' }
 });
 
 routerProc.stdout.on('data', (data) => {
-  const msg = data.toString();
-  console.log('[9Router STDOUT]:', msg);
-  routerLog += msg;
+  routerLog += data;
+  console.log('[9Router STDOUT]:', data.trim());
 });
 
 routerProc.stderr.on('data', (data) => {
-  const msg = data.toString();
-  console.error('[9Router STDERR]:', msg);
-  routerLog += msg;
+  routerLog += data;
+  console.error('[9Router STDERR]:', data.trim());
 });
 
-routerProc.on('close', (code) => {
-  console.error(`[9Router] Process terhenti dengan exit code: ${code}`);
-  routerLog += `\n[SYSTEM] Process exited with code ${code}`;
+routerProc.on('exit', (code) => {
+  routerLog += `\n[SYSTEM] 9Router Exit Code: ${code}\n`;
 });
 
-// 2. Jalankan Hermes Bot Telegram (Jeda 10 detik)
+// 2. Jalankan Hermes Bot Telegram (Jeda 8 detik)
 setTimeout(() => {
   console.log('[Hermes] Memulai Hermes Bot Telegram...');
-  const hermesProc = spawn('npx', ['--no-install', 'hermes-agent', 'telegram', 'start'], {
-    stdio: 'inherit',
-    shell: true
-  });
+  exec('npx hermes-agent telegram start');
+}, 8000);
 
-  hermesProc.on('error', (err) => {
-    console.error('[Hermes Error]:', err);
-  });
-}, 10000);
-
-// 3. Reverse Proxy HTTP ke 9Router
-const routerProxy = createProxyMiddleware({
+// 3. Reverse Proxy (V3)
+app.use('/', createProxyMiddleware({
   target: 'http://127.0.0.1:20128',
   changeOrigin: true,
   ws: true,
@@ -67,19 +45,17 @@ const routerProxy = createProxyMiddleware({
       if (!res.headersSent) {
         res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(`
-          <div style="font-family: sans-serif; padding: 20px;">
-            <h2>⏳ 9Router Sedang Memuat / Mengalami Kendala</h2>
-            <p>Silakan refresh halaman ini dalam 5 detik.</p>
-            <p><strong>Log Server:</strong></p>
-            <pre style="background: #1e1e1e; color: #4af626; padding: 15px; border-radius: 8px; overflow-x: auto;">${routerLog}</pre>
-          </div>
+          <body style="background:#121212; color:#4af626; font-family:monospace; padding:30px;">
+            <h2>⏳ 9Router Sedang Booting...</h2>
+            <p>Silakan tekan <b>Refresh / F5</b> dalam 3-5 detik.</p>
+            <hr style="border:1px dashed #333; margin:20px 0;" />
+            <pre style="white-space: pre-wrap; font-size:14px;">${routerLog}</pre>
+          </body>
         `);
       }
     }
   }
-});
-
-app.use('/', routerProxy);
+}));
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`App listening at http://0.0.0.0:${port}`);
