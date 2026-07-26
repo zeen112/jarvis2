@@ -3,17 +3,28 @@ const { spawn } = require('child_process');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
+// Express otomatis memakai PORT dari Back4App (8080)
 const port = process.env.PORT || 3000;
 
-// 1. Jalankan Service 9Router (Port 20128)
+let routerLog = 'Memulai 9Router...\n';
+
+// 1. Jalankan Service 9Router (Port internal 20128)
 console.log('[9Router] Memulai service 9Router...');
-const routerProc = spawn('npx', ['--no-install', '9router', '--host', '0.0.0.0', '--port', '20128'], {
-  stdio: 'inherit',
+const routerProc = spawn('npx', ['9router', '--port', '20128'], {
+  stdio: 'pipe',
   shell: true
 });
 
-routerProc.on('error', (err) => {
-  console.error('[9Router Error]:', err);
+routerProc.stdout.on('data', (data) => {
+  const msg = data.toString();
+  console.log('[9Router STDOUT]:', msg);
+  routerLog += msg;
+});
+
+routerProc.stderr.on('data', (data) => {
+  const msg = data.toString();
+  console.error('[9Router STDERR]:', msg);
+  routerLog += '[ERROR] ' + msg;
 });
 
 // 2. Jalankan Hermes Bot Telegram (Jeda 10 detik)
@@ -23,26 +34,30 @@ setTimeout(() => {
     stdio: 'inherit',
     shell: true
   });
-
-  hermesProc.on('error', (err) => {
-    console.error('[Hermes Error]:', err);
-  });
 }, 10000);
 
-// 3. Reverse Proxy kompatibel v3.x
-app.use('/', createProxyMiddleware({
+// 3. Setup Reverse Proxy
+const routerProxy = createProxyMiddleware({
   target: 'http://127.0.0.1:20128',
   changeOrigin: true,
   ws: true,
   on: {
     error: (err, req, res) => {
-      res.writeHead(503, { 'Content-Type': 'text/html' });
-      res.end('<h3>9Router sedang proses booting... Silakan refresh halaman ini dalam beberapa detik.</h3>');
+      if (!res.headersSent) {
+        res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(`
+          <h3>9Router Belum Siap / Mengalami Kendala</h3>
+          <p>Berikut adalah log internal dari 9Router:</p>
+          <pre style="background: #111; color: #0f0; padding: 15px; border-radius: 5px;">${routerLog}</pre>
+          <p><i>Silakan refresh jika log di atas menunjukkan proses startup masih berjalan.</i></p>
+        `);
+      }
     }
   }
-}));
+});
 
-// 4. Jalankan Server Express
+app.use('/', routerProxy);
+
 app.listen(port, '0.0.0.0', () => {
   console.log(`App listening at http://0.0.0.0:${port}`);
 });
