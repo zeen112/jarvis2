@@ -1,9 +1,16 @@
 const express = require('express');
 const { spawn } = require('child_process');
+const { createProxyMiddleware } = require('http-proxy-middleware'); // <-- Impor middleware proxy
 
 const app = express();
 // Menggunakan port dari environment Back4App atau fallback ke 3000
 const port = process.env.PORT || 3000;
+
+// Reverse Proxy: Membuka jalur akses /v1 ke 9Router (port 20128) agar bisa dipanggil dari PC lokal
+app.use('/v1', createProxyMiddleware({
+  target: 'http://127.0.0.1:20128',
+  changeOrigin: true
+}));
 
 app.get('/', (req, res) => {
   res.send(`
@@ -70,5 +77,5 @@ app.listen(port, '0.0.0.0', () => {
     hermesProc.on('error', (err) => {
       console.error('[Hermes Error]:', err);
     });
-  }, 5000);
+  }, 10000); // Jedanya dinaikkan ke 10 detik agar 9Router benar-benar siap
 });
