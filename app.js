@@ -29,19 +29,18 @@ setTimeout(() => {
   });
 }, 10000);
 
-// 3. Setup Proxy Middleware dengan Penanganan Error (OnError)
-const routerProxy = createProxyMiddleware({
+// 3. Reverse Proxy kompatibel v3.x
+app.use('/', createProxyMiddleware({
   target: 'http://127.0.0.1:20128',
   changeOrigin: true,
   ws: true,
-  onError: (err, req, res) => {
-    res.writeHead(503, { 'Content-Type': 'text/html' });
-    res.end('<h3>9Router sedang proses booting... Silakan refresh halaman ini dalam 5-10 detik.</h3>');
+  on: {
+    error: (err, req, res) => {
+      res.writeHead(503, { 'Content-Type': 'text/html' });
+      res.end('<h3>9Router sedang proses booting... Silakan refresh halaman ini dalam beberapa detik.</h3>');
+    }
   }
-});
-
-// Teruskan seluruh request ke 9Router
-app.use('/', routerProxy);
+}));
 
 // 4. Jalankan Server Express
 app.listen(port, '0.0.0.0', () => {
