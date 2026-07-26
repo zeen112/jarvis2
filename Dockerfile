@@ -1,19 +1,27 @@
-# Use Node.js v14
-FROM node:14
+# 1. Gunakan Node.js v20 (Sesuai kebutuhan minimum 9Router & Hermes)
+FROM node:20-slim
 
-# Create app directory
+# 2. Install Python 3.11 & Pip yang diwajibkan oleh Hermes Agent
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. Buat direktori kerja
 WORKDIR /usr/src/app
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# 4. Copy package.json dan install dependencies
 COPY package*.json ./
 
 RUN npm install
 
-# Bundle app source
+# 5. Copy seluruh sisa kodingan project
 COPY . .
 
-# Expose the port
+# 6. Expose Port 3000 untuk Express Health Check
 EXPOSE 3000
 
+# 7. Jalankan aplikasi
 CMD [ "node", "app.js" ]
